@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="yue">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>廣東話韻尾訓練</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">10日訓練 · 每日15分鐘</p>
+      <h1>廣東話韻尾訓練</h1>
+      <p class="tagline">聽、讀、打、分，集中練好 -n/-ng 同 -t/-k。</p>
+    </div>
+    <button id="resetProgressBtn" class="ghost-btn icon-text-btn" type="button" title="重設進度" aria-label="重設進度">
+      <span>重設</span>
+    </button>
+  </header>
+
+  <main id="app" class="app-shell"></main>
+
+  <footer class="site-credit">
+    prepared by <a href="https://chaak.net/" target="_blank" rel="noopener noreferrer">Chaak 劉擇明（牙擇 / chaak.net）</a>
+  </footer>
+
+  <template id="homeTemplate">
+    <section class="card intro-card">
+      <div class="intro-title-row">
+        <span id="introGymIcon" class="decor-icon" aria-hidden="true"></span>
+        <h2>每日一小節，練清兩組尾音</h2>
+      </div>
+      <p>「懶音」只係方便講法；重點係聽得出、讀得穩。</p>
+      <p class="note">多數人最常處理：<strong>-n / -ng</strong> 同 <strong>-t / -k</strong>。每日做少少，唔需要背長篇規則。</p>
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
+        <h2>10日進度</h2>
+        <span id="overallProgress" class="pill"></span>
+      </div>
+      <div id="unitList" class="unit-list"></div>
+    </section>
+  </template>
+
+  <template id="unitTemplate">
+    <nav class="top-nav">
+      <button id="backHomeBtn" class="ghost-btn icon-text-btn" type="button" title="返回主頁" aria-label="返回主頁">
+        <span>返回</span>
+      </button>
+      <span id="unitProgress" class="pill"></span>
+    </nav>
+    <section class="card unit-title-card">
+      <p id="unitDay" class="eyebrow"></p>
+      <h2 id="unitTitle"></h2>
+      <p class="take-home-label">今日帶走句</p>
+      <p id="unitFocus" class="note"></p>
+    </section>
+    <div id="moduleList"></div>
+    <section class="card daily-drill-card">
+      <h3>每日 TypeDuck 加操</h3>
+      <p id="dailyDrillText"></p>
+      <div id="dailyDrillRhymes" class="daily-drill-rhymes"></div>
+      <p id="dailyDrillHelp" class="daily-drill-help"></p>
+      <a class="typeduck-link" href="https://www.typeduck.hk/" target="_blank" rel="noopener noreferrer">
+        <img src="typeduck.png" alt="TypeDuck" />
+        <span>去 TypeDuck 練習</span>
+      </a>
+      <label class="check-row">
+        <input id="dailyDrillCheck" type="checkbox" />
+        <span>我今日已完成 TypeDuck 練習。</span>
+      </label>
+    </section>
+    <section class="card completion-card">
+      <h3>每日完成清單</h3>
+      <ul id="dailyChecklist" class="checklist"></ul>
+      <p id="dayCompleteMessage" class="completion-message"></p>
+    </section>
+  </template>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
