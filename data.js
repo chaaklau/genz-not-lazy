@@ -16,32 +16,32 @@ window.COURSE_DATA = {
     "真":"zan1", "奔":"ban1", "陳":"can4", "頻":"pan4", "增":"zang1", "崩":"bang1", "層":"cang4", "朋":"pang4",
     "親":"can1", "分":"fan1", "登":"dang1", "騰":"tang4", "焚":"fan4", "宏":"wang4",
 
-    "孟":"maang6", "撐":"caang1", "懶":"laan5", "攀":"paan1", "慢":"maan6", "烹":"paang1", "燦":"caan3", "冷":"laang5",
-    "橙":"caang2", "蜢":"maang5", "晏":"aan3", "鰻":"maan4", "班":"baan1", "慳":"haan1", "爭":"zaang1", "蠻":"maan4", "盲":"maang4", "橫":"waang4",
+    "孟":"maang6", "撐":"caang3", "懶":"laan5", "攀":"paan1", "慢":"maan6", "烹":"paang1", "燦":"caan3", "冷":"laang5",
+    "橙":"caang2", "蜢":"maang2", "晏":"aan3", "鰻":"maan6", "班":"baan1", "慳":"haan1", "爭":"zaang1", "蠻":"maan4", "盲":"maang4", "橫":"waang4",
 
-    "罕":"hon2", "康":"hong1", "江":"gong1", "安":"on1", "行":"haang4", "刊":"hon1", "骯":"ong1", "乾":"gon1",
+    "罕":"hon2", "康":"hong1", "江":"gong1", "安":"on1", "行":"hong4", "刊":"hon1", "骯":"ong1", "乾":"gon1",
     "幹":"gon3", "汗":"hon6", "缸":"gong1", "寒":"hon4", "降":"gong3", "干":"gon1", "航":"hong4", "項":"hong6",
-    "趕":"gon2", "螃":"pong4", "塘":"tong4", "芒":"mong4",
+    "趕":"gon2", "螃":"pong4", "塘":"tong4", "芒":"mong1",
 
-    "察":"caat3", "滑":"waat6", "劃":"waak6", "紮":"zaat3", "拆":"caak3", "勒":"lak6", "辣":"laat6", "窄":"zaak3",
-    "扎":"zaat3", "法":"faat3", "刷":"saat3", "殺":"saat3", "責":"zaak3", "客":"haak3", "冊":"caak3", "格":"gaak3",
+    "察":"caat3", "滑":"waat6", "劃":"waak6", "紮":"zaat3", "拆":"caak3", "勒":"laak6", "辣":"laat6", "窄":"zaak3",
+    "扎":"zaat3", "法":"faat3", "刷":"caat3", "殺":"saat3", "責":"zaak3", "客":"haak3", "冊":"caak3", "格":"gaak3",
     "八":"baat3", "百":"baak3", "白":"baak6", "髮":"faat3", "伯":"baak3", "八百":"baat3 baak3", "白髮":"baak6 faat3", "伯伯":"baak3 baak3",
 
     "香":"hoeng1", "響":"hoeng2", "想":"soeng2", "常":"soeng4", "量":"loeng6", "亮":"loeng6", "槍":"coeng1", "牆":"coeng4",
     "剛":"gong1", "薑":"goeng1", "光":"gwong1", "僵":"goeng1", "竿":"gon1", "肝":"gon1", "疆":"goeng1", "向":"hoeng3", "撞":"zong6", "讓":"joeng6", "岸":"ngon6",
 
     "靚":"leng3", "輕":"heng1", "聽":"teng1", "訂":"deng3", "青":"ceng1", "驚":"geng1", "贏":"jeng4", "柄":"beng3",
-    "腥":"seng1", "身":"san1", "牲":"saang1", "辛":"san1", "伸":"san1", "聲":"seng1", "申":"san1", "甥":"saang1",
+    "腥":"seng1", "身":"san1", "牲":"sang1", "辛":"san1", "伸":"san1", "聲":"seng1", "申":"san1", "甥":"sang1",
     "病":"beng6", "羊":"joeng4", "鏡":"geng3", "餅":"beng2",
 
     "葛":"got3", "國":"gwok3", "喝":"hot3", "托":"tok3", "各":"gok3", "岳":"ngok6",
-    "駱":"lok3", "漠":"mok6", "渴":"hot3", "索":"sok3", "作":"zok3", "割":"got3", "確":"kok3", "褐":"hot3", "殼":"hok3",
+    "駱":"lok6", "漠":"mok6", "渴":"hot3", "索":"sok3", "作":"zok3", "割":"got3", "確":"kok3", "褐":"hot3", "殼":"hok3",
 
     "不":"bat1", "七":"cat1", "物":"mat6", "北":"bak1", "測":"cak1", "默":"mak6",
     "質":"zat1", "失":"sat1", "黑":"hak1", "側":"zak1", "塞":"sak1", "乞":"hat1", "疾":"zat6", "日":"jat6", "麥":"mak6", "骨":"gwat1", "得":"dak1", "刻":"hak1",
 
     "皇":"wong4", "徨":"wong4", "凰":"wong4", "湯":"tong1", "燙":"tong3", "盪":"dong6", "案":"on3", "按":"on3", "胺":"on1",
-    "桿":"gon2", "鞍":"on1", "狀":"zong6", "壯":"zong3", "裝":"zong1",
+    "桿":"gon1", "鞍":"on1", "狀":"zong6", "壯":"zong3", "裝":"zong1",
 
     "室":"sat1", "窒":"zat6", "姪":"zat6", "軼":"jat6", "絡":"lok3", "洛":"lok3", "烙":"lok3",
     "膜":"mok2", "寞":"mok6", "佛":"fat6", "彿":"fat1", "克":"hak1", "剋":"hak1", "柏":"paak3", "泊":"paak3", "擇":"zaak6", "澤":"zaak6"
