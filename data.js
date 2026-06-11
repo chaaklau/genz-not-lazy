@@ -3,7 +3,7 @@
 
   Main data types:
   - perc: data is a string/list of words. The app gets coda from LEXICON.
-  - prod: data is a string/list of words. ASR checks whether the target word is heard.
+  - prod: data is a string/list of words. The app plays a sample and lets learners record their shadowing.
   - quiz: data uses ! before the correct odd-one-out answer, e.g. "親分!登".
   - type: data is a sentence with answers in [square brackets]. The app turns them into text boxes.
 
@@ -52,10 +52,10 @@ window.COURSE_DATA = {
       id: 1,
       title: "n/ng韻尾（1）",
       focus: "分清 -n 同 -ng：-n 舌尖前，-ng 舌根後。",
-      extraDrill: "喺 TypeDuck 打 *ang，再同 *an 比較；讀嘅時候留意收尾舌位有無轉前。",
+      extraDrill: "今日練 -ang，再同 -an 比較；讀嘅時候留意收尾舌位有無轉前。",
       modules: [
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -n 定係 -ng 韻尾。", data: "盟新很巾生肯民羹" },
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字，睇下語音識別可唔可以認到正確嘅字。認唔到嘅話，可能係韻尾讀錯咗。", data: "真奔陳頻增崩層朋" },
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；反覆聽兩邊比較韻尾位置。", data: "真奔陳頻增崩層朋" },
         { type: "quiz", title: "選擇題1", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "親分!登" },
         { type: "quiz", title: "選擇題2", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "騰!焚宏" }
       ]
@@ -64,11 +64,11 @@ window.COURSE_DATA = {
       id: 2,
       title: "n/ng韻尾（2）",
       focus: "練 aa 韻：-ng 收尾要開口，唔好頂牙。",
-      extraDrill: "喺 TypeDuck 打 *aang，再同 *aan 比較；留意舌尖有無掂到牙。",
+      extraDrill: "今日練 -aang，再同 -aan 比較；留意舌尖有無掂到牙。",
       modules: [
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -n 定係 -ng 韻尾。", data: "孟撐懶攀慢烹燦冷" },
-        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "2.1", data: "我係一隻[橙]色 (orange) 嘅草[蜢] (grasshopper)。" },
-        { type: "type", title: "打字練習2", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "2.2", data: "呢度有條瞓緊[晏]覺 (afternoon nap) 嘅[鰻]魚 (eel)。" },
+        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "2.1", data: "我係一隻[橙]色 (orange) 嘅草[蜢] (grasshopper)。" },
+        { type: "type", title: "打字練習2", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "2.2", data: "呢度有條瞓緊[晏]覺 (afternoon nap) 嘅[鰻]魚 (eel)。" },
         { type: "quiz", title: "選擇題1", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "班慳!爭" },
         { type: "quiz", title: "選擇題2", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "!蠻盲橫" }
       ]
@@ -77,32 +77,32 @@ window.COURSE_DATA = {
       id: 3,
       title: "n/ng韻尾（3）",
       focus: "練 on/ong：-ng 要留後面，口腔唔好收太死。",
-      extraDrill: "喺 TypeDuck 打 *ong，再同 *on 比較；讀 -ng 時保持舌根向後。",
+      extraDrill: "今日練 -ong，再同 -on 比較；讀 -ng 時保持舌根向後。",
       modules: [
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -n 定係 -ng 韻尾。", data: "罕康江安行刊骯乾" },
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字，睇下語音識別可唔可以認到正確嘅字。認唔到嘅話，可能係韻尾讀錯咗。", data: "幹汗缸寒降干航項" },
-        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "3.1", data: "我係一隻[趕] (rush) 時間嘅[螃]蟹 (crab)。" },
-        { type: "type", title: "打字練習2", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "3.2", data: "池[塘] (pond) 入面有隻[芒]果 (mango)。" }
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；反覆聽兩邊比較韻尾位置。", data: "幹汗缸寒降干航項" },
+        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "3.1", data: "我係一隻[趕] (rush) 時間嘅[螃]蟹 (crab)。" },
+        { type: "type", title: "打字練習2", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "3.2", data: "池[塘] (pond) 入面有隻[芒]果 (mango)。" }
       ]
     },
     {
       id: 4,
       title: "t/k韻尾（1）",
       focus: "分清 -t 同 -k：-t 前收，-k 後收。",
-      extraDrill: "喺 TypeDuck 打 *aak，再同 *aat 比較；留意收尾前後閉合位置。",
+      extraDrill: "今日練 -aak，再同 -aat 比較；留意收尾前後閉合位置。",
       modules: [
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -t 定係 -k 韻尾。", data: "察滑劃紮拆勒辣窄" },
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字，睇下語音識別可唔可以認到正確嘅字。認唔到嘅話，可能係韻尾讀錯咗。", data: "扎法刷殺責客冊格" },
-        { type: "type", title: "打字練習", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "4.1", data: "有[八百] (eight hundred) 個滿頭[白髮] (white hair) 嘅[伯伯] (uncle)。" }
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；反覆聽兩邊比較韻尾位置。", data: "扎法刷殺責客冊格" },
+        { type: "type", title: "打字練習", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "4.1", data: "有[八百] (eight hundred) 個滿頭[白髮] (white hair) 嘅[伯伯] (uncle)。" }
       ]
     },
     {
       id: 5,
       title: "n/ng韻尾（4）",
       focus: "記住：oe 韻只可以配 -ng，唔配 -n。",
-      extraDrill: "喺 TypeDuck 打 *oeng；呢組只會係 -ng，收尾舌根向後、微開口。",
+      extraDrill: "今日練 -oeng；呢組只會係 -ng，收尾舌根向後、微開口。",
       modules: [
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字。注意：韻母 oe 只可以配 -ng，唔可以配 -n。", data: "香響想常量亮槍牆" },
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；留意 oe 韻只可以配 -ng，唔可以配 -n。", data: "香響想常量亮槍牆" },
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -n 定係 -ng 韻尾。", data: "剛薑光僵竿肝疆江" },
         { type: "quiz", title: "選擇題1", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "!汗項向" },
         { type: "quiz", title: "選擇題2", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "撞讓!岸" }
@@ -112,21 +112,21 @@ window.COURSE_DATA = {
       id: 6,
       title: "n/ng韻尾（5）",
       focus: "記住：e 韻只可以配 -ng，唔配 -n。",
-      extraDrill: "喺 TypeDuck 打 *eng；讀尾音時保持舌根向後。",
+      extraDrill: "今日練 -eng；讀尾音時保持舌根向後。",
       modules: [
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字。注意：韻母 e 只可以配 -ng，唔可以配 -n。", data: "靚輕聽訂青驚贏柄" },
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；留意 e 韻只可以配 -ng，唔可以配 -n。", data: "靚輕聽訂青驚贏柄" },
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -n 定係 -ng 韻尾。", data: "腥身牲辛伸聲申甥" },
-        { type: "type", title: "打字練習", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "6.1", data: "[病] (sick) 咗嘅[羊] (sheep) 咩咩望住塊[鏡] (mirror) 食[餅] (biscuit)。" }
+        { type: "type", title: "打字練習", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "6.1", data: "[病] (sick) 咗嘅[羊] (sheep) 咩咩望住塊[鏡] (mirror) 食[餅] (biscuit)。" }
       ]
     },
     {
       id: 7,
       title: "t/k韻尾（2）",
       focus: "練 ok/ot：-k 留後，-t 向前。",
-      extraDrill: "喺 TypeDuck 打 *ok，再同 *ot 比較；收尾時感受前後口感。",
+      extraDrill: "今日練 -ok，再同 -ot 比較；收尾時感受前後口感。",
       modules: [
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -t 定係 -k 韻尾。", data: "葛國喝托各岳" },
-        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "7.1", data: "[駱]駝 (camel) 喺沙[漠] (desert) 好口[渴] (thirsty)。" },
+        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "7.1", data: "[駱]駝 (camel) 喺沙[漠] (desert) 好口[渴] (thirsty)。" },
         { type: "quiz", title: "選擇題1", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "索作!割" },
         { type: "quiz", title: "選擇題2", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "確!褐殼" }
       ]
@@ -135,10 +135,10 @@ window.COURSE_DATA = {
       id: 8,
       title: "t/k韻尾（3）",
       focus: "練 ak/at：-k 後閉，-t 前閉。",
-      extraDrill: "喺 TypeDuck 打 *ak，再同 *at 比較；留意舌尖有無向前頂。",
+      extraDrill: "今日練 -ak，再同 -at 比較；留意舌尖有無向前頂。",
       modules: [
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -t 定係 -k 韻尾。", data: "不七物北測默" },
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字，睇下語音識別可唔可以認到正確嘅字。認唔到嘅話，可能係韻尾讀錯咗。", data: "質失黑側塞乞" },
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；反覆聽兩邊比較韻尾位置。", data: "質失黑側塞乞" },
         { type: "quiz", title: "選擇題1", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "疾日!麥" },
         { type: "quiz", title: "選擇題2", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "!骨得刻" }
       ]
@@ -147,20 +147,20 @@ window.COURSE_DATA = {
       id: 9,
       title: "n/ng韻尾（6）",
       focus: "字形可以幫手，但最後都要靠舌位判斷。",
-      extraDrill: "喺 TypeDuck 打 *ong 同 *on；可留意字形提示，但一定要聽同讀去核對。",
+      extraDrill: "今日練 -ong 同 -on；可留意字形提示，但一定要聽同讀去核對。",
       modules: [
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字，睇下語音識別可唔可以認到正確嘅字。注意：有時字形部件可以提示個字係 -n 定 -ng 尾。", data: "皇徨凰湯燙盪案按胺" },
-        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "9.1", data: "對面[岸] (shore) 旗[桿] (flagpole) 下面有個人流晒[汗] (sweat) 騎喺馬[鞍] (saddle) 上面睇緊本[刊]物 (magazine)。" },
-        { type: "type", title: "打字練習2", instruction: "請喺 iPhone 用 TypeDuck 打出答案，然後將個字輸入下面個答案格。", hint: "9.2", data: "拎住獎[狀] (certificate) 睇落好強[壯] (strong) 嗰個人[裝]扮 (dress up) 得好特別。" }
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；留意字形提示之餘，仍然要比較 -n / -ng 口腔位置。", data: "皇徨凰湯燙盪案按胺" },
+        { type: "type", title: "打字練習1", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "9.1", data: "對面[岸] (shore) 旗[桿] (flagpole) 下面有個人流晒[汗] (sweat) 騎喺馬[鞍] (saddle) 上面睇緊本[刊]物 (magazine)。" },
+        { type: "type", title: "打字練習2", instruction: "請喺 iPhone 用 TypeDuck 打出完整漢字／詞答案，然後輸入下面答案格。", hint: "9.2", data: "拎住獎[狀] (certificate) 睇落好強[壯] (strong) 嗰個人[裝]扮 (dress up) 得好特別。" }
       ]
     },
     {
       id: 10,
       title: "t/k韻尾（4）",
       focus: "字形加口感一齊用，分清 -t/-k 前後閉合。",
-      extraDrill: "喺 TypeDuck 打 *ak 同 *at；留意字形提示之餘，確認舌尖有無向前。",
+      extraDrill: "今日練 -ak 同 -at；留意字形提示之餘，確認舌尖有無向前。",
       modules: [
-        { type: "prod", title: "朗讀練習", instruction: "請讀出以下嘅字，睇下語音識別可唔可以認到正確嘅字。注意：有時字形部件可以提示個字係 -t 定 -k 尾。", data: "室窒姪失疾軼絡洛烙" },
+        { type: "prod", title: "跟讀錄音", instruction: "先聽 sample，再錄自己版本；留意字形提示之餘，仍然要比較 -t / -k 閉合位置。", data: "室窒姪失疾軼絡洛烙" },
         { type: "perc", title: "分類練習", instruction: "請仔細聆聽錄音，然後分類個字係 -t 定係 -k 韻尾。", data: "膜寞佛彿克剋" },
         { type: "quiz", title: "選擇題1", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "柏泊!八" },
         { type: "quiz", title: "選擇題2", instruction: "請聆聽錄音，揀出邊個字嘅韻尾同其他字唔同。", data: "擇!紮澤" }

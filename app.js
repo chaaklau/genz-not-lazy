@@ -3,10 +3,14 @@ const app = document.getElementById("app");
 const homeTemplate = document.getElementById("homeTemplate");
 const unitTemplate = document.getElementById("unitTemplate");
 const STORE_KEY = "cantoneseCodaTrainerProgress.v1";
+const JYUTPING_AUDIO_BASE = "audio/jyutping/";
 
 let state = loadState();
 let currentUnitId = null;
-let currentRecognition = null;
+let currentSampleAudio = null;
+let samplePlaybackToken = 0;
+let sharedMicStream = null;
+let activeStopRecording = null;
 const TAKE_HOME_MESSAGES = {
   1: "舌尖前收係 -n，舌根後收係 -ng。",
   2: "讀 -ng 唔好頂牙，尾音要開口。",
@@ -111,7 +115,81 @@ function targetsForUnit(unit) {
   return unit.title.includes("t/k") ? ["-t", "-k"] : ["-n", "-ng"];
 }
 
-function speak(text) {
+const RHYME_SUGGESTIONS = {
+  ang: ["hang", "zang", "dang", "sang", "gang"],
+  an: ["fan", "jan", "san", "man", "gan"],
+  aang: ["paang", "maang", "caang", "laang", "haang"],
+  aan: ["faan", "taan", "waan", "maan", "baan"],
+  ong: ["fong", "cong", "wong", "gong", "hong"],
+  on: ["gon", "hon", "on", "ngon"],
+  aak: ["zaak", "paak", "gaak", "baak", "caak"],
+  aat: ["saat", "caat", "waat", "faat", "zaat"],
+  oeng: ["zoeng", "joeng", "soeng", "coeng", "loeng"],
+  eng: ["beng", "zeng", "geng", "teng", "deng"],
+  ok: ["bok", "mok", "gok", "zok", "hok"],
+  ot: ["got", "hot"],
+  ak: ["mak", "hak", "dak", "zak", "lak"],
+  at: ["fat", "jat", "mat", "sat", "zat"]
+};
+
+function rhymeBody(rhyme) {
+  return String(rhyme || "").replace(/^-/, "");
+}
+
+function suggestedSyllablesForRhyme(rhyme) {
+  return RHYME_SUGGESTIONS[rhymeBody(rhyme)] || [];
+}
+
+function sampleUrlsFromJyutping(jp) {
+  if (!jp || jp === "?") return [];
+  return jp.trim().split(/\s+/).filter(Boolean).map(syllable => `${JYUTPING_AUDIO_BASE}${encodeURIComponent(syllable.toLowerCase())}.mp3`);
+}
+
+function sampleUrlsForText(text) {
+  const exact = jyutping(text);
+  if (exact !== "?") return sampleUrlsFromJyutping(exact);
+
+  const compactChars = Array.from(String(text).replace(/[!！?？。，,、\s]/g, ""));
+  if (compactChars.length > 1 && compactChars.every(ch => DATA.lexicon[ch])) {
+    return compactChars.flatMap(ch => sampleUrlsFromJyutping(DATA.lexicon[ch]));
+  }
+
+  return [];
+}
+
+function stopCurrentSample() {
+  samplePlaybackToken += 1;
+  if (currentSampleAudio) {
+    currentSampleAudio.pause();
+    currentSampleAudio.currentTime = 0;
+    currentSampleAudio = null;
+  }
+}
+
+function playOneSample(url, token) {
+  return new Promise((resolve, reject) => {
+    if (token !== samplePlaybackToken) {
+      resolve();
+      return;
+    }
+
+    const audio = new Audio(url);
+    currentSampleAudio = audio;
+    audio.preload = "auto";
+    audio.addEventListener("ended", resolve, { once: true });
+    audio.addEventListener("error", reject, { once: true });
+    audio.play().catch(reject);
+  });
+}
+
+async function playSampleSequence(urls, token) {
+  for (const url of urls) {
+    if (token !== samplePlaybackToken) return;
+    await playOneSample(url, token);
+  }
+}
+
+function speakWithSynth(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
@@ -121,6 +199,31 @@ function speak(text) {
   const hkVoice = voices.find(v => /zh[-_]HK/i.test(v.lang)) || voices.find(v => /Cantonese|Hong Kong|Sinji/i.test(v.name));
   if (hkVoice) utterance.voice = hkVoice;
   window.speechSynthesis.speak(utterance);
+}
+
+function speak(text) {
+  stopCurrentSample();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+  const urls = sampleUrlsForText(text);
+  if (!urls.length) {
+    speakWithSynth(text);
+    return;
+  }
+
+  const token = samplePlaybackToken;
+  playSampleSequence(urls, token).catch(() => {
+    if (token === samplePlaybackToken) speakWithSynth(text);
+  });
+}
+
+async function getSharedMicStream() {
+  if (sharedMicStream && sharedMicStream.active) return sharedMicStream;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error("media-devices-unavailable");
+  }
+  sharedMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  return sharedMicStream;
 }
 
 function makeSvgIcon(type, label = "") {
@@ -278,17 +381,25 @@ function renderUnit(unitId) {
   const drillRhymes = document.getElementById("dailyDrillRhymes");
   const drillHelp = document.getElementById("dailyDrillHelp");
   if (drillRhymes) {
-    const rhymes = unit.extraDrill.match(/\*[a-z]+/gi) || [];
+    const rhymes = Array.from(new Set(unit.extraDrill.match(/-[a-z]+/gi) || []));
     drillRhymes.innerHTML = "";
     rhymes.slice(0, 2).forEach(rhyme => {
-      drillRhymes.append(el("span", { class: "rhyme-pill-big", text: rhyme }));
+      const body = rhymeBody(rhyme);
+      drillRhymes.append(el("div", { class: "rhyme-practice" }, [
+        el("span", { class: "rhyme-pill-big", text: rhyme }),
+        el("span", { class: "pattern-chip", text: `*${body}` }),
+        el("span", { class: "example-chip", text: suggestedSyllablesForRhyme(rhyme).join(" / ") })
+      ]));
     });
   }
   if (drillHelp) {
     drillHelp.innerHTML = "";
     const phone = makeSvgIcon("phone", "手機");
     phone.classList.add("inline-phone-icon");
-    drillHelp.append(phone, el("span", { text: " 建議用手機打；或者用 TypeDuck 網頁。" }));
+    const firstRhyme = rhymeBody((unit.extraDrill.match(/-[a-z]+/i) || [""])[0]);
+    const examples = suggestedSyllablesForRhyme(firstRhyme).slice(0, 3).join(" / ");
+    const exampleText = firstRhyme ? `例如 *${firstRhyme}，再試 ${examples}。` : "";
+    drillHelp.append(phone, el("span", { text: ` 手機用 Initial-Rhyme layout：先打 Wildcard * + Rhyme，下面列最多 5 個常見例子。${exampleText}按 TypeDuck icon 開網頁版。` }));
   }
 
   const dailyDrillCheck = document.getElementById("dailyDrillCheck");
@@ -309,7 +420,7 @@ function renderModule(unit, module, moduleIndex) {
     el("span", { class: "pill", id: `module-status-${moduleIndex}`, text: isModuleComplete(unit.id, moduleIndex) ? "✓ 已完成" : "未完成" })
   ]);
   card.append(header);
-  card.append(el("p", { class: "instruction", text: conciseInstruction(module.type) }));
+  card.append(el("p", { class: "instruction", text: module.instruction || conciseInstruction(module.type) }));
 
   if (module.type === "perc") renderPerception(card, unit, module, moduleIndex);
   if (module.type === "prod") renderProduction(card, unit, module, moduleIndex);
@@ -455,18 +566,14 @@ function renderQuiz(card, unit, module, moduleIndex) {
 function renderProduction(card, unit, module, moduleIndex) {
   const words = splitWords(module.data);
   const completeSet = new Set();
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const supportNote = el("p", { class: "note compact-note", text: SpeechRecognition ? "請讀：呢個係X字。只會接受最高排名答案為正確。" : "瀏覽器唔支援語音識別，請用「完成」。" });
+  const canRecord = Boolean(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const supportNote = el("p", {
+    class: "note compact-note",
+    text: canRecord
+      ? "先聽 sample，再錄自己版本；可反覆聽兩邊比較。錄過或按「完成」就會計入。"
+      : "瀏覽器唔支援錄音。請聽 sample 跟讀後按「完成」。"
+  });
   card.append(supportNote);
-
-  function logAsr(message) {
-    const ts = new Date().toLocaleTimeString("zh-HK", { hour12: false });
-    const line = `${ts} ${message}`;
-    if (!window.__asrLogs) window.__asrLogs = [];
-    window.__asrLogs.unshift(line);
-    if (window.__asrLogs.length > 120) window.__asrLogs.length = 120;
-    if (typeof console !== "undefined" && console.debug) console.debug(line);
-  }
 
   function maybeComplete() {
     if (completeSet.size === words.length) setModuleComplete(unit.id, moduleIndex, true);
@@ -475,204 +582,128 @@ function renderProduction(card, unit, module, moduleIndex) {
   const row = el("div", { class: "production-row" });
 
   words.forEach(word => {
-    const item = el("div", { class: "production-chip" });
-    const result = el("div", { class: "asr-result" });
+    const item = el("div", { class: "production-chip shadow-chip" });
+    const status = el("div", { class: "shadow-status", text: "未錄音" });
     const fb = el("div", { class: "feedback" });
-    const jp = el("div", { class: "jyutping" });
+    const jp = el("div", { class: "jyutping", text: jyutping(word) });
 
-    const listenBtn = iconButton("listen", "聽", () => speak(word));
-    const speakBtn = iconButton("record", "錄音", null, "primary-btn icon-btn record-btn");
-    const manualBtn = iconTextButton("check", "完成", "手動完成");
+    const listenBtn = iconButton("listen", "聽 sample", () => speak(word));
+    const recordBtn = iconTextButton("record", "錄音", "開始錄音", null, "primary-btn icon-text-btn record-btn");
+    const playMineBtn = iconButton("play", "聽自己", null);
+    const manualBtn = iconTextButton("check", "完成", "標記完成");
+    let recorder = null;
+    let chunks = [];
+    let recordingUrl = "";
+    let recordingTimeout = null;
 
     function markCorrect(message) {
       completeSet.add(word);
-      jp.textContent = jyutping(word);
       fb.textContent = message || "✓";
       fb.className = "feedback good";
       maybeComplete();
     }
 
-    manualBtn.addEventListener("click", () => markCorrect("✓ 已手動完成"));
+    function setRecordButtonText(text) {
+      const label = recordBtn.querySelector("span");
+      if (label) label.textContent = text;
+    }
 
-    speakBtn.addEventListener("click", () => {
-      if (!SpeechRecognition) {
-        fb.textContent = "瀏覽器唔支援語音識別。請朗讀後按「完成」。";
+    function clearRecordingUrl() {
+      if (!recordingUrl) return;
+      URL.revokeObjectURL(recordingUrl);
+      recordingUrl = "";
+    }
+
+    function stopRecording() {
+      if (recorder && recorder.state === "recording") recorder.stop();
+    }
+
+    function finishRecording() {
+      clearTimeout(recordingTimeout);
+      recordingTimeout = null;
+      recordBtn.classList.remove("recording");
+      setRecordButtonText("再錄");
+      recordBtn.setAttribute("title", "重新錄音");
+      recordBtn.setAttribute("aria-label", "重新錄音");
+      if (activeStopRecording === stopRecording) activeStopRecording = null;
+
+      if (!chunks.length) {
+        status.textContent = "未收到錄音，請再試。";
+        fb.textContent = "錄音未成功。";
         fb.className = "feedback bad";
-        logAsr(`[${word}] 不支援 SpeechRecognition`);
         return;
       }
 
-      if (currentRecognition) {
-        currentRecognition.manualAbort = true;
-        currentRecognition.abort();
-        logAsr(`[${word}] 已中止上一個識別`);
+      const blob = new Blob(chunks, { type: recorder && recorder.mimeType ? recorder.mimeType : "audio/webm" });
+      clearRecordingUrl();
+      recordingUrl = URL.createObjectURL(blob);
+      playMineBtn.disabled = false;
+      status.textContent = "可聽自己，再同 sample 比較。";
+      markCorrect("✓ 已錄音");
+    }
+
+    async function startRecording() {
+      if (!canRecord) {
+        fb.textContent = "呢個瀏覽器唔支援錄音，請跟讀後按「完成」。";
+        fb.className = "feedback bad";
+        return;
       }
 
-      const yueLangs = ["yue-Hant-HK", "yue-HK", "yue"];
-      const seen = [];
-
-      fb.textContent = "聆聽中…";
-      fb.className = "feedback";
-      result.textContent = "";
-
-      const startAttempt = (langIndex) => {
-        let gotResult = false;
-        let matched = false;
-        let endedByError = false;
-        let timedOut = false;
-        let heardSound = false;
-        let heardSpeech = false;
-        let allowRetry = false;
-        let recognition;
-
-        try {
-          recognition = new SpeechRecognition();
-        } catch {
-          fb.textContent = "語音識別初始化失敗，請改用 Chrome / Safari，或者先按「完成」。";
+      try {
+        if (activeStopRecording) activeStopRecording();
+        const stream = await getSharedMicStream();
+        chunks = [];
+        recorder = new MediaRecorder(stream);
+        recorder.addEventListener("dataavailable", event => {
+          if (event.data && event.data.size > 0) chunks.push(event.data);
+        });
+        recorder.addEventListener("stop", finishRecording, { once: true });
+        recorder.addEventListener("error", () => {
+          clearTimeout(recordingTimeout);
+          recordBtn.classList.remove("recording");
+          setRecordButtonText("錄音");
+          status.textContent = "錄音失敗，請再試。";
+          fb.textContent = "錄音失敗。";
           fb.className = "feedback bad";
-          logAsr(`[${word}] 初始化失敗`);
-          return;
-        }
+          if (activeStopRecording === stopRecording) activeStopRecording = null;
+        }, { once: true });
 
-        currentRecognition = recognition;
-        recognition.lang = yueLangs[langIndex];
-        recognition.interimResults = true;
-        recognition.continuous = false;
-        recognition.maxAlternatives = 5;
+        recorder.start();
+        activeStopRecording = stopRecording;
+        recordBtn.classList.add("recording");
+        setRecordButtonText("停止");
+        recordBtn.setAttribute("title", "停止錄音");
+        recordBtn.setAttribute("aria-label", "停止錄音");
+        status.textContent = "錄緊，讀完可按停止。";
+        fb.textContent = "";
+        fb.className = "feedback";
+        recordingTimeout = setTimeout(stopRecording, 4500);
+      } catch (error) {
+        status.textContent = "未能開啟咪高峰。";
+        fb.textContent = "請允許咪高峰權限，或者跟讀後按「完成」。";
+        fb.className = "feedback bad";
+      }
+    }
 
-        const timeoutId = setTimeout(() => {
-          timedOut = true;
-          logAsr(`[${word}] 3s timeout -> stop()`);
-          try {
-            recognition.stop();
-          } catch {
-            logAsr(`[${word}] timeout stop 失敗`);
-          }
-        }, 3000);
-
-        recognition.onstart = () => {
-          fb.textContent = "錄音就緒，請讀出。";
-          fb.className = "feedback";
-          speakBtn.classList.add("recording");
-          logAsr(`[${word}] onstart lang=${recognition.lang}`);
-        };
-        recognition.onaudiostart = () => logAsr(`[${word}] onaudiostart`);
-        recognition.onsoundstart = () => {
-          heardSound = true;
-          logAsr(`[${word}] onsoundstart`);
-        };
-        recognition.onspeechstart = () => {
-          heardSpeech = true;
-          logAsr(`[${word}] onspeechstart`);
-        };
-        recognition.onspeechend = () => logAsr(`[${word}] onspeechend`);
-
-        recognition.onresult = event => {
-          const latest = event.results[event.results.length - 1];
-          if (!latest) return;
-          const alternatives = Array.from(latest).map(r => r.transcript.trim()).filter(Boolean);
-          if (!alternatives.length) return;
-          gotResult = true;
-          alternatives.forEach(text => {
-            if (!seen.includes(text)) seen.push(text);
-          });
-          logAsr(`[${word}] onresult final=${latest.isFinal} -> ${alternatives.join(" | ")}`);
-          result.textContent = `識別：${seen.join(" / ")}`;
-
-          const carryEval = evaluateCarrySentenceRanking(seen, word);
-          if (carryEval.accept) {
-            matched = true;
-            markCorrect("✓");
-            clearTimeout(timeoutId);
-            recognition.manualAbort = true;
-            recognition.abort();
-          } else if (latest.isFinal) {
-            const top = carryEval.candidates.slice(0, 3).map(c => c.char).join("、");
-            fb.textContent = top ? `收到文字，候選：${top}` : "收到文字，核對中…";
-            fb.className = "feedback";
-          }
-        };
-
-        recognition.onerror = event => {
-          if (recognition.manualAbort) return;
-          endedByError = true;
-          logAsr(`[${word}] onerror ${event.error}`);
-          if (event.error === "language-not-supported" && langIndex < yueLangs.length - 1) {
-            allowRetry = true;
-            return;
-          }
-          if (event.error === "not-allowed") {
-            fb.textContent = "未有咪高峰權限。請允許麥克風後再試。";
-          } else if (event.error === "no-speech") {
-            fb.textContent = "收唔到聲音，請再朗讀一次。";
-          } else if (event.error === "language-not-supported") {
-            fb.textContent = "瀏覽器唔支援 yue 語音識別。請改用最新版 Chrome。";
-          } else {
-            fb.textContent = "語音識別失敗。可以再試一次，或者朗讀後按「完成」。";
-          }
-          fb.className = "feedback bad";
-        };
-
-        recognition.onend = () => {
-          clearTimeout(timeoutId);
-          currentRecognition = null;
-          speakBtn.classList.remove("recording");
-          logAsr(`[${word}] onend gotResult=${gotResult} matched=${matched} timeout=${timedOut} heardSound=${heardSound} heardSpeech=${heardSpeech}`);
-          if (recognition.manualAbort) return;
-          if (completeSet.has(word) || matched) return;
-
-          if (allowRetry) {
-            logAsr(`[${word}] 語言重試 -> ${yueLangs[langIndex + 1]}`);
-            startAttempt(langIndex + 1);
-            return;
-          }
-
-          if (gotResult) {
-            const carryEval = evaluateCarrySentenceRanking(seen, word);
-            const topText = carryEval.candidates.slice(0, 3).map(c => `${c.char}（${c.jp}）`).join("、");
-            if (!carryEval.hasCarryForm) {
-              fb.textContent = "✗ 請用完整句式：呢個係X字。";
-            } else if (topText) {
-              fb.textContent = `✗ 最高排名唔係目標字。候選：${topText}。請再讀：呢個係${word}字。`;
-            } else {
-              fb.textContent = `✗ 未認到關鍵字。請再讀：呢個係${word}字。`;
-            }
-          } else if (timedOut && !endedByError) {
-            fb.textContent = "3秒內未有文字結果。請靠近咪高峰、大聲少少，再試一次。";
-          } else if (!endedByError) {
-            if (!heardSound) {
-              fb.textContent = "未收到聲音。請檢查咪高峰權限，再讀一次。";
-            } else if (!heardSpeech) {
-              fb.textContent = "收到環境聲，但未收到清楚語音。請靠近咪高峰、慢啲讀。";
-            } else {
-              fb.textContent = "收到語音但未轉到文字。請大聲少少再試，或者按「完成」。";
-            }
-          }
-
-          if (fb.textContent === "聆聽中…") {
-            fb.textContent = "未完成語音轉文字。請再試一次，或者按「完成」。";
-          }
-          fb.className = "feedback bad";
-        };
-
-        try {
-          recognition.start();
-        } catch {
-          clearTimeout(timeoutId);
-          fb.textContent = "語音識別啟動失敗。請再試，或者朗讀後按「完成」。";
-          fb.className = "feedback bad";
-          logAsr(`[${word}] start() 失敗`);
-        }
-      };
-
-      startAttempt(0);
+    manualBtn.addEventListener("click", () => markCorrect("✓ 已完成"));
+    playMineBtn.disabled = true;
+    playMineBtn.addEventListener("click", () => {
+      if (!recordingUrl) return;
+      new Audio(recordingUrl).play();
+    });
+    recordBtn.addEventListener("click", () => {
+      if (recorder && recorder.state === "recording") {
+        stopRecording();
+        return;
+      }
+      startRecording();
     });
 
     item.append(
       el("span", { class: "chip-char", text: word }),
-      el("div", { class: "production-controls" }, [listenBtn, speakBtn, manualBtn]),
       jp,
-      result,
+      el("div", { class: "shadow-controls" }, [listenBtn, recordBtn, playMineBtn, manualBtn]),
+      status,
       fb
     );
     row.append(item);
@@ -683,9 +714,9 @@ function renderProduction(card, unit, module, moduleIndex) {
 
 function conciseInstruction(type) {
   if (type === "perc") return "聽一次，分 -n/-ng 或 -t/-k。";
-  if (type === "prod") return "聽、讀、錄；讀到同音都算啱。";
+  if (type === "prod") return "先聽 sample，錄自己版本，再反覆比較。";
   if (type === "quiz") return "先按「全部播放」，再揀答案。";
-  if (type === "type") return "只填拼音／韻母。";
+  if (type === "type") return "請打晒成個漢字／詞。";
   return "完成練習。";
 }
 
@@ -712,6 +743,10 @@ function renderTypePractice(card, unit, module, moduleIndex) {
     const paddedMain = main.length === 1 ? `0${main}` : main;
     const suffix = dotIndex >= 0 ? hint.slice(dotIndex) : "";
     const candidates = [
+      `pics/${hint}.jpg`,
+      `pics/${paddedMain}${suffix}.jpg`,
+      `pics/${paddedMain}.jpg`,
+      `pics/${main}.jpg`,
       `pics/${hint}.png`,
       `pics/${paddedMain}${suffix}.png`,
       `pics/${paddedMain}.png`,
@@ -724,31 +759,33 @@ function renderTypePractice(card, unit, module, moduleIndex) {
         img.src = candidates[index];
         return;
       }
-      img.replaceWith(el("div", { class: "image-placeholder", text: `提示圖未搵到：${hint}.png` }));
+      img.replaceWith(el("div", { class: "image-placeholder", text: `提示圖未搵到：${hint}.jpg` }));
     };
     img.src = candidates[index];
     card.append(img);
   }
   const item = el("div", { class: "type-item" });
-  item.append(el("p", { class: "type-note", text: "輸入漢字或拼音均可（唔計聲調）。" }));
+  item.append(el("p", { class: "type-note", text: "請輸入完整漢字答案；唔使輸入拼音／韻母。" }));
   const sentence = el("div", { class: "type-sentence" });
   const parts = parseTypeSentence(module.data);
   const blanks = [];
   const hintWords = [];
   const inputList = el("div", { class: "type-input-list" });
+  let blankCount = 0;
 
-  parts.forEach((part, blankIndex) => {
+  parts.forEach(part => {
     if (part.type === "text") {
       sentence.append(document.createTextNode(part.value));
       return;
     }
 
+    blankCount += 1;
     hintWords.push(part.value);
     sentence.append(el("span", { class: "inline-blank", text: "＿＿" }));
 
     const wrapper = el("div", { class: "type-input-row" });
     const jp = el("span", { class: "jyutping" });
-    const input = el("input", { type: "text", maxlength: 30, placeholder: `答案 ${blankIndex + 1}`, "aria-label": `Answer ${blankIndex + 1}` });
+    const input = el("input", { type: "text", maxlength: 30, placeholder: `答案 ${blankCount}`, "aria-label": `Answer ${blankCount}` });
     const fb = el("span", { class: "feedback" });
     const prompt = el("span", { class: "wrong-prompt" });
     wrapper.append(input, fb, jp, prompt);
@@ -757,8 +794,8 @@ function renderTypePractice(card, unit, module, moduleIndex) {
   });
 
   const hintWrap = el("div", { class: "type-hints" });
-  hintWords.forEach(word => {
-    hintWrap.append(el("span", { class: "hint-chip", text: word }));
+  hintWords.forEach((word, index) => {
+    hintWrap.append(el("span", { class: "hint-chip", text: `答案 ${index + 1}: ${Array.from(word).length}字` }));
   });
 
   const checkBtn = iconTextButton("check", "檢查", "檢查答案", null, "primary-btn icon-text-btn");
@@ -779,8 +816,7 @@ function renderTypePractice(card, unit, module, moduleIndex) {
         blank.fb.textContent = "✗";
         blank.fb.className = "feedback bad";
         blank.jp.textContent = "";
-        const targetJp = jyutping(blank.answer);
-        blank.prompt.textContent = `請輸入「${blank.answer}」或其拼音「${targetJp}」（唔計聲調）。`;
+        blank.prompt.textContent = `請輸入完整答案「${blank.answer}」。`;
         blank.prompt.classList.add("visible");
       }
     });
@@ -839,186 +875,11 @@ function refreshUnitProgress(unitId) {
   }
 }
 
-function transcriptMatchesTarget(text, targetWord) {
-  const normalized = normalizeAsrText(text);
-  if (!normalized) return false;
-  if (normalized.includes(targetWord)) return true;
-
-  const targetJp = jyutping(targetWord);
-  if (targetJp === "?") return false;
-  const targetParsed = parseJyutping(targetJp);
-
-  // 1) If ASR returned Jyutping-like latin tokens, compare directly.
-  const romanizedTokens = extractJyutpingLikeTokens(normalized);
-  for (const token of romanizedTokens) {
-    if (isJyutpingMatch(token, targetParsed)) return true;
-  }
-
-  // 2) If ASR returned Han chars, map each char to Jyutping and compare.
-  for (const ch of Array.from(normalized)) {
-    const chJp = jyutping(ch);
-    if (chJp === "?") continue;
-    if (isJyutpingMatch(chJp, targetParsed)) return true;
-  }
-
-  return false;
-}
-
-function normalizeAsrText(text) {
-  return (text || "").toLowerCase().replace(/[\s，。,.!?！？]/g, "");
-}
-
 function typeAnswerMatchesTarget(value, answer) {
   const trimmed = (value || "").trim();
   if (!trimmed) return false;
-  if (trimmed === answer) return true;
-  const targetJp = jyutping(answer);
-  if (targetJp === "?") return false;
-  const norm = s => s.toLowerCase().replace(/[\s\-]/g, "");
-  if (norm(trimmed) === norm(targetJp)) return true;
-  const noTone = s => norm(s).replace(/[1-6]/g, "");
-  const inputNoTone = noTone(trimmed);
-  const targetNoTone = noTone(targetJp);
-  if (inputNoTone.length >= 2 && inputNoTone === targetNoTone) return true;
-  return false;
-}
-
-function extractJyutpingLikeTokens(text) {
-  const tokens = text.match(/[a-z]+[1-6]?/g);
-  return tokens || [];
-}
-
-function isJyutpingMatch(candidateJp, targetParsed) {
-  const parsed = parseJyutping(candidateJp);
-  if (!parsed.base || !targetParsed.base) return false;
-
-  // Exact base match is required; tone can vary in ASR but coda must stay exact.
-  if (parsed.base !== targetParsed.base) return false;
-  if (parsed.coda !== targetParsed.coda) return false;
-  return true;
-}
-
-function nearestCharacterSuggestion(alternatives, targetWord) {
-  const targetJp = jyutping(targetWord);
-  if (!targetJp || targetJp === "?") return null;
-
-  const targetParts = parseJyutping(targetJp);
-  const byCandidate = new Map();
-
-  alternatives.forEach(alt => {
-    const normalized = (alt || "").replace(/[\s，。,.!?！？]/g, "");
-    Array.from(normalized).forEach(ch => {
-      const jp = jyutping(ch);
-      if (!jp || jp === "?") return;
-
-      const candidateParts = parseJyutping(jp);
-      const baseDistance = levenshtein(candidateParts.base, targetParts.base);
-      const tonePenalty = candidateParts.tone === targetParts.tone ? 0 : 0.3;
-      const codaPenalty = candidateParts.coda === targetParts.coda ? 0 : 0.9;
-      const score = baseDistance + tonePenalty + codaPenalty;
-
-      const key = `${ch}|${jp}`;
-      const prev = byCandidate.get(key);
-      if (!prev) {
-        byCandidate.set(key, { char: ch, jp, score, count: 1 });
-      } else {
-        prev.count += 1;
-        prev.score = Math.min(prev.score, score);
-      }
-    });
-  });
-
-  const candidates = Array.from(byCandidate.values())
-    .sort((a, b) => (a.score - b.score) || (b.count - a.count) || a.char.localeCompare(b.char));
-
-  if (!candidates.length) return null;
-
-  const best = candidates[0];
-  const second = candidates[1];
-  const ambiguous = Boolean(second && Math.abs(second.score - best.score) <= 0.15);
-  return { best, candidates, ambiguous };
-}
-
-function evaluateCarrySentenceRanking(alternatives, targetWord) {
-  const candidates = rankCarrySentenceCandidates(alternatives);
-  const best = candidates[0] || null;
-  const hasCarryForm = alternatives.some(alt => {
-    const text = normalizeAsrText(alt);
-    return text.includes("呢個係") && text.includes("字");
-  });
-  const targetJp = jyutping(targetWord);
-  const accept = Boolean(best && (best.char === targetWord || (targetJp !== "?" && best.jp === targetJp)));
-  return { accept, hasCarryForm, candidates };
-}
-
-function rankCarrySentenceCandidates(alternatives) {
-  const scoreMap = new Map();
-
-  alternatives.forEach(alt => {
-    const raw = normalizeAsrText(alt);
-    if (!raw) return;
-
-    const startIdx = raw.indexOf("係");
-    const endIdx = raw.indexOf("字", startIdx + 1);
-    const between = startIdx >= 0 && endIdx > startIdx ? raw.slice(startIdx + 1, endIdx) : raw;
-    const chars = Array.from(between).filter(ch => /\p{Script=Han}/u.test(ch));
-    if (!chars.length) return;
-
-    chars.forEach((ch, idx) => {
-      const jp = jyutping(ch);
-      if (jp === "?") return;
-      const key = `${ch}|${jp}`;
-      const baseScore = 1;
-      const endBonus = idx === chars.length - 1 ? 0.7 : 0;
-      const singleBonus = chars.length === 1 ? 0.8 : 0;
-      const score = baseScore + endBonus + singleBonus;
-      const prev = scoreMap.get(key);
-      if (!prev) {
-        scoreMap.set(key, { char: ch, jp, score, count: 1 });
-      } else {
-        prev.count += 1;
-        prev.score += score;
-      }
-    });
-  });
-
-  return Array.from(scoreMap.values())
-    .sort((a, b) => (b.score - a.score) || (b.count - a.count) || a.char.localeCompare(b.char));
-}
-
-function parseJyutping(jp) {
-  const syllable = (jp || "").trim().split(/\s+/).at(-1) || "";
-  const toneMatch = syllable.match(/[1-6]$/);
-  const tone = toneMatch ? toneMatch[0] : "";
-  const base = syllable.replace(/[1-6]/g, "").toLowerCase();
-  return { base, tone, coda: codaFromBase(base) };
-}
-
-function codaFromBase(base) {
-  if (base.endsWith("ng")) return "ng";
-  if (base.endsWith("n")) return "n";
-  if (base.endsWith("k")) return "k";
-  if (base.endsWith("t")) return "t";
-  return "";
-}
-
-function levenshtein(a, b) {
-  const x = a || "";
-  const y = b || "";
-  const dp = Array.from({ length: x.length + 1 }, () => Array(y.length + 1).fill(0));
-  for (let i = 0; i <= x.length; i += 1) dp[i][0] = i;
-  for (let j = 0; j <= y.length; j += 1) dp[0][j] = j;
-  for (let i = 1; i <= x.length; i += 1) {
-    for (let j = 1; j <= y.length; j += 1) {
-      const cost = x[i - 1] === y[j - 1] ? 0 : 1;
-      dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,
-        dp[i][j - 1] + 1,
-        dp[i - 1][j - 1] + cost
-      );
-    }
-  }
-  return dp[x.length][y.length];
+  const compact = s => String(s).replace(/\s+/g, "");
+  return compact(trimmed) === compact(answer);
 }
 
 function checkbox(checked) {
