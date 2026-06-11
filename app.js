@@ -344,6 +344,38 @@ function el(tag, attrs = {}, children = []) {
   return node;
 }
 
+function unitIdFromHash() {
+  const match = window.location.hash.match(/^#day-(\d+)$/);
+  if (!match) return null;
+  const unitId = Number(match[1]);
+  return DATA.units.some(unit => unit.id === unitId) ? unitId : null;
+}
+
+function homeUrl() {
+  return `${window.location.pathname}${window.location.search}`;
+}
+
+function navigateHome() {
+  if (window.location.hash) window.history.replaceState({ view: "home" }, "", homeUrl());
+  renderHome();
+}
+
+function navigateUnit(unitId) {
+  const hash = `#day-${unitId}`;
+  if (window.location.hash !== hash) window.history.pushState({ view: "unit", unitId }, "", hash);
+  renderUnit(unitId);
+}
+
+function renderRoute() {
+  const unitId = unitIdFromHash();
+  if (unitId) {
+    renderUnit(unitId);
+    return;
+  }
+  if (window.location.hash) window.history.replaceState({ view: "home" }, "", homeUrl());
+  renderHome();
+}
+
 function renderHome() {
   currentUnitId = null;
   app.innerHTML = "";
@@ -356,7 +388,7 @@ function renderHome() {
 
   DATA.units.forEach(unit => {
     const complete = isUnitComplete(unit);
-    const tile = el("button", { class: `unit-tile ${complete ? "complete" : ""}`, type: "button", onclick: () => renderUnit(unit.id) }, [
+    const tile = el("button", { class: `unit-tile ${complete ? "complete" : ""}`, type: "button", onclick: () => navigateUnit(unit.id) }, [
       el("p", { class: "eyebrow", text: `第 ${unit.id} 日` }),
       el("h3", {}, [makeSvgIcon(unit.id % 2 ? "timer" : "dumbbell"), el("span", { text: `Day ${unit.id}` })]),
       el("p", { class: "note", text: TAKE_HOME_MESSAGES[unit.id] || unit.focus }),
@@ -372,7 +404,7 @@ function renderUnit(unitId) {
   app.innerHTML = "";
   app.append(unitTemplate.content.cloneNode(true));
   addLeadingIcon(document.getElementById("backHomeBtn"), "back");
-  document.getElementById("backHomeBtn").addEventListener("click", renderHome);
+  document.getElementById("backHomeBtn").addEventListener("click", navigateHome);
   document.getElementById("unitDay").textContent = `第 ${unit.id} 日`;
   document.getElementById("unitTitle").textContent = `Day ${unit.id}`;
   document.getElementById("unitFocus").textContent = TAKE_HOME_MESSAGES[unit.id] || unit.focus;
@@ -802,9 +834,17 @@ function renderTypePractice(card, unit, module, moduleIndex) {
   const listenBtn = iconTextButton("listen", "全句", "聽全句", () => speak(module.data.replace(/\[|\]/g, "")));
   const moduleFb = el("div", { class: "feedback" });
 
-  checkBtn.addEventListener("click", () => {
+  function clearTypeFeedback(blank) {
+    blank.fb.textContent = "";
+    blank.fb.className = "feedback";
+    blank.jp.textContent = "";
+    blank.prompt.classList.remove("visible");
+  }
+
+  function checkTypeAnswers() {
     let allCorrect = true;
     blanks.forEach(blank => {
+      blank.input.disabled = false;
       const value = blank.input.value.trim();
       if (typeAnswerMatchesTarget(value, blank.answer)) {
         blank.fb.textContent = "✓";
@@ -828,7 +868,24 @@ function renderTypePractice(card, unit, module, moduleIndex) {
       moduleFb.textContent = "請改正紅色交叉嘅答案，再試多次。";
       moduleFb.className = "feedback bad";
     }
+  }
+
+  blanks.forEach(blank => {
+    blank.input.addEventListener("input", () => {
+      clearTypeFeedback(blank);
+      if (moduleFb.classList.contains("bad")) {
+        moduleFb.textContent = "";
+        moduleFb.className = "feedback";
+      }
+    });
+    blank.input.addEventListener("keydown", event => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      checkTypeAnswers();
+    });
   });
+
+  checkBtn.addEventListener("click", checkTypeAnswers);
 
   item.append(sentence, hintWrap, inputList, el("div", { class: "production-controls" }, [listenBtn, checkBtn]), moduleFb);
   card.append(item);
@@ -900,4 +957,7 @@ if (window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = () => {};
 }
 
-renderHome();
+window.addEventListener("popstate", renderRoute);
+window.addEventListener("hashchange", renderRoute);
+
+renderRoute();
